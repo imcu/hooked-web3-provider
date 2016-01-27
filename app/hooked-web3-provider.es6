@@ -82,7 +82,7 @@ var factory = function(Web3) {
         // Remember: "session_nonces" is the nonces we know about for this batch of rewriting (this "session").
         //           Having this cache makes it so we only need to call getTransactionCount once per batch.
         //           "global_nonces" is nonces across the life of this provider.
-        var getNonce = (done) => {
+        var getNonce = (maxRetries, done) => {
           // If a nonce is specified in our nonce list, use that nonce.
           var nonce = session_nonces[sender];
           if (nonce != null) {
@@ -93,26 +93,39 @@ var factory = function(Web3) {
             // hence the need for global_nonces.
             // We call directly to our own sendAsync method, because the web3 provider
             // is not guaranteed to be set.
-            this.sendAsync({
+            var retryCount = 0;
+
+            var rpcParams = {
               jsonrpc: '2.0',
               method: 'eth_getTransactionCount',
               params: [sender, "pending"],
-              id: (new Date()).getTime()
-            }, function(err, result) {
+              id: new Date().getTime()
+            };
+
+            var cbk = (err, result) => {
+              retryCount++;
               if (err != null) {
-                done(err);
+
+                if(retryCount>=maxRetries) {
+                  done(err);
+                } else {
+                  this.sendAsync(rpcParams, cbk);
+                }
+
               } else {
                 var new_nonce = result.result;
                 done(null, Web3.prototype.toDecimal(new_nonce));
               }
-            });
+            };
+
+            this.sendAsync(rpcParams, cbk);
           }
         };
 
         // Get the nonce, requesting from web3 if we need to.
         // We then store the nonce and update it so we don't have to
         // to request from web3 again.
-        getNonce((err, nonce) => {
+        getNonce(3, (err, nonce) => {
           if (err != null) {
             return finished(err);
           }

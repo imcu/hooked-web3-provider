@@ -4,7 +4,7 @@
 
 var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
-var _get = function get(_x, _x2, _x3) { var _again = true; _function: while (_again) { var object = _x, property = _x2, receiver = _x3; desc = parent = getter = undefined; _again = false; if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { _x = parent; _x2 = property; _x3 = receiver; _again = true; continue _function; } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } } };
+var _get = function get(_x, _x2, _x3) { var _again = true; _function: while (_again) { var object = _x, property = _x2, receiver = _x3; _again = false; if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { _x = parent; _x2 = property; _x3 = receiver; _again = true; desc = parent = undefined; continue _function; } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } } };
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -134,7 +134,7 @@ var factory = function factory(Web3) {
           // Remember: "session_nonces" is the nonces we know about for this batch of rewriting (this "session").
           //           Having this cache makes it so we only need to call getTransactionCount once per batch.
           //           "global_nonces" is nonces across the life of this provider.
-          var getNonce = function getNonce(done) {
+          var getNonce = function getNonce(maxRetries, done) {
             // If a nonce is specified in our nonce list, use that nonce.
             var nonce = session_nonces[sender];
             if (nonce != null) {
@@ -145,26 +145,38 @@ var factory = function factory(Web3) {
               // hence the need for global_nonces.
               // We call directly to our own sendAsync method, because the web3 provider
               // is not guaranteed to be set.
-              _this3.sendAsync({
+              var retryCount = 0;
+
+              var rpcParams = {
                 jsonrpc: '2.0',
                 method: 'eth_getTransactionCount',
                 params: [sender, "pending"],
                 id: new Date().getTime()
-              }, function (err, result) {
+              };
+
+              var cbk = function cbk(err, result) {
+                retryCount++;
                 if (err != null) {
-                  done(err);
+
+                  if (retryCount >= maxRetries) {
+                    done(err);
+                  } else {
+                    _this3.sendAsync(rpcParams, cbk);
+                  }
                 } else {
                   var new_nonce = result.result;
                   done(null, Web3.prototype.toDecimal(new_nonce));
                 }
-              });
+              };
+
+              _this3.sendAsync(rpcParams, cbk);
             }
           };
 
           // Get the nonce, requesting from web3 if we need to.
           // We then store the nonce and update it so we don't have to
           // to request from web3 again.
-          getNonce(function (err, nonce) {
+          getNonce(3, function (err, nonce) {
             if (err != null) {
               return finished(err);
             }

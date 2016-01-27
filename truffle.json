@@ -7,21 +7,12 @@
     // so we can refer to the built file.
     "hooked-web3-provider.min.js": {
       "files": [
-        "../build/hooked-web3-provider.js"
+        "../environments/development/build/hooked-web3-provider.js"
       ],
       "post-process": [
         "uglify"
       ]
-    },
-
-    // The next two are for testing.
-    "app.js": [
-      "../node_modules/jquery/dist/jquery.min.js",
-      "../node_modules/bignumber.js/bignumber.js",
-      "../node_modules/ethereumjs-accounts/dist/ethereumjs-accounts.js",
-      "hooked-web3-provider.es6"
-    ],
-    "index.html": "index.html"
+    }
   },
   "deploy": [],
   "rpc": {
