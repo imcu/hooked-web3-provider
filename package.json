@@ -16,6 +16,6 @@
   },
   "license": "MIT License. Copyright Consensys LLC, and authors. All rights reserved.",
   "dependencies": {
-    "web3": "0.15.1"
+    "web3": "git+https://github.com/imcu/web3.js.git"
   }
 }
