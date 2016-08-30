@@ -24,7 +24,11 @@ var factory = function(Web3) {
         }
       }
 
-      var finishedWithRewrite = () => {
+      var finishedWithRewrite = (err) => {
+        if(err != null) {
+          callback(err);
+          return;
+        }
         return super.send(payload, callback);
       };
 
@@ -35,7 +39,12 @@ var factory = function(Web3) {
     // methods to sendRawTransaction, calling out to the transaction_signer to
     // get the data for sendRawTransaction.
     sendAsync(payload, callback) {
-      var finishedWithRewrite = () => {
+      var finishedWithRewrite = (err) => {
+        if(err != null) {
+          callback(err);
+          return;
+        }
+
         super.sendAsync(payload, callback);
       };
 
